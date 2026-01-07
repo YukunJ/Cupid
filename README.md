@@ -1,4 +1,4 @@
-<img src="image/cupid.png" alt="Cupid Logo" height="250">
+<img src="image/cupid.png" alt="Cupid Logo" height="200">
 
 
 -----------------

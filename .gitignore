@@ -39,3 +39,14 @@
 
 # debug information files
 *.dwo
+
+# extra
+build/
+cmake-build-debug/
+*.DS_Store
+*.iml
+*.xml
+.idea/
+*/.ipynb_checkpoints/
+.vscode/
+.vagrant

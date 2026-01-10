@@ -22,6 +22,15 @@ ELSE()
     MESSAGE(FATAL_ERROR "Only Linux is supported. Your operating system ${CMAKE_SYSTEM_NAME} is not supported.")
 ENDIF()
 
+INCLUDE(FetchContent)
+FetchContent_Declare(
+        googletest
+        GIT_REPOSITORY https://github.com/google/googletest
+        GIT_TAG        v1.17.0 # or a later release
+)
+SET(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
+
 ######################################################################################################################
 # Search Path Specification
 ######################################################################################################################
@@ -34,9 +43,10 @@ FIND_PACKAGE(Threads REQUIRED)
 # Include
 ######################################################################################################################
 
-# Includes header file path
+# Includes file path
 SET(SRC_DIR ${PROJECT_SOURCE_DIR}/src)
 SET(INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
+SET(TEST_DIR ${PROJECT_SOURCE_DIR}/test)
 
 ######################################################################################################################
 # Build
@@ -46,3 +56,18 @@ TARGET_INCLUDE_DIRECTORIES(adder PUBLIC ${INCLUDE_DIR})
 
 ADD_EXECUTABLE(main ${SRC_DIR}/main.cpp)
 TARGET_LINK_LIBRARIES(main adder)
+
+######################################################################################################################
+# Test
+######################################################################################################################
+ENABLE_TESTING()
+
+ADD_EXECUTABLE(adder_test ${TEST_DIR}/adder_test.cpp)
+TARGET_LINK_LIBRARIES(
+  adder_test
+  adder
+  GTest::gtest_main
+)
+
+INCLUDE(GoogleTest)
+GTEST_DISCOVER_TESTS(adder_test)

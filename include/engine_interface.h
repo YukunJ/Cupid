@@ -4,6 +4,8 @@
 #define ENGINE_INTERFACE_H
 
 #include "engine_types.h"
+#include <vector>
+#include <utility>
 
 namespace cupid {
 
@@ -12,7 +14,8 @@ class engine_interface {
 public:
     void init() { impl().init(); }
     void destroy() { impl().destroy(); }
-    [[nodiscard]] orderid_t limit(order_t order) noexcept { return impl().limit(order); }
+    // TODO: get rid of the dynamic array std::vector for reporting how many resting orders are executed
+    [[nodiscard]] std::pair<orderid_t, std::vector<execution_t>> limit(order_t order) noexcept { return impl().limit(order); }
     bool cancel(orderid_t orderid) noexcept { return impl().cancel(orderid); }
     void execution(execution_t exec) {impl().execution(exec); }
 

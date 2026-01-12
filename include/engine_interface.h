@@ -12,12 +12,10 @@ namespace cupid {
 template <typename Impl>
 class engine_interface {
 public:
-    void init() { impl().init(); }
-    void destroy() { impl().destroy(); }
     // TODO: get rid of the dynamic array std::vector for reporting how many resting orders are executed
+    // the resting-on-book order should be reported first in the returned vector
     [[nodiscard]] std::pair<orderid_t, std::vector<execution_t>> limit(order_t order) noexcept { return impl().limit(order); }
     bool cancel(orderid_t orderid) noexcept { return impl().cancel(orderid); }
-    void execution(execution_t exec) {impl().execution(exec); }
 
 protected:
     engine_interface() = default;

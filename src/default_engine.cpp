@@ -4,28 +4,19 @@
 #include "engine_interface.h"
 #include "default_engine.h"
 
+// Nasdaq match engine spec section F: https://www.sec.gov/files/rules/other/nasdaqllcf1a4_5/e_sysdesc.pdf
 namespace cupid {
 
-void default_engine::init() {
-    // to fill
-}
-
-void default_engine::destroy() {
-    // to fill
-}
+default_engine::default_engine(): next_orderid{1} {};
 
 std::pair<orderid_t, std::vector<execution_t>> default_engine::limit(order_t order) noexcept {
     // to fill
-    return {curr_orderid++, {}};
+    return {next_orderid++, {}};
 }
 
 bool default_engine::cancel(orderid_t orderid) noexcept {
     // to fill
     return true;
-}
-
-void default_engine::execution(execution_t exec) {
-    // to fill
 }
 
 }

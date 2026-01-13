@@ -51,26 +51,13 @@ SET(TEST_DIR ${PROJECT_SOURCE_DIR}/test)
 ######################################################################################################################
 # Build
 ######################################################################################################################
-ADD_LIBRARY(adder ${SRC_DIR}/adder.cpp)
-TARGET_INCLUDE_DIRECTORIES(adder PUBLIC ${INCLUDE_DIR})
-
 ADD_LIBRARY(default_engine ${SRC_DIR}/default_engine.cpp)
 TARGET_INCLUDE_DIRECTORIES(default_engine PUBLIC ${INCLUDE_DIR})
-
-ADD_EXECUTABLE(main ${SRC_DIR}/main.cpp)
-TARGET_LINK_LIBRARIES(main adder)
 
 ######################################################################################################################
 # Test
 ######################################################################################################################
 ENABLE_TESTING()
-
-ADD_EXECUTABLE(adder_test ${TEST_DIR}/adder_test.cpp)
-TARGET_LINK_LIBRARIES(
-  adder_test
-  adder
-  GTest::gtest_main
-)
 
 ADD_EXECUTABLE(default_engine_test ${TEST_DIR}/default_engine_test.cpp)
 TARGET_LINK_LIBRARIES(
@@ -80,5 +67,4 @@ TARGET_LINK_LIBRARIES(
 )
 
 INCLUDE(GoogleTest)
-GTEST_DISCOVER_TESTS(adder_test)
 GTEST_DISCOVER_TESTS(default_engine_test)

@@ -13,8 +13,9 @@ template <typename Impl>
 class engine_interface {
 public:
     // TODO: get rid of the dynamic array std::vector for reporting how many resting orders are executed
-    // the resting-on-book order should be reported first in the returned vector
+    // the passive side matched should be reported first in the returned vector
     [[nodiscard]] std::pair<orderid_t, std::vector<execution_t>> limit(order_t order) noexcept { return impl().limit(order); }
+    // return True if the order is located and cancelled successfully
     bool cancel(orderid_t orderid) noexcept { return impl().cancel(orderid); }
 
 protected:

@@ -39,6 +39,26 @@ FetchContent_MakeAvailable(googletest)
 SET(THREADS_PREFER_PTHREAD_FLAG ON)
 FIND_PACKAGE(Threads REQUIRED)
 
+# Find clang-format
+IF (NOT DEFINED CLANG_FORMAT_BIN)
+  FIND_PROGRAM(CLANG_FORMAT_BIN NAMES clang-format clang-format-14)
+ENDIF ()
+IF ("${CLANG_FORMAT_BIN}" STREQUAL "CLANG_FORMAT_BIN-NOTFOUND")
+    MESSAGE(WARNING "Couldn't find clang-format.")
+ELSE ()
+    MESSAGE(STATUS "Found clang-format at ${CLANG_FORMAT_BIN}")
+ENDIF ()
+
+# Find cpplint
+IF (NOT DEFINED CLANG_FORMAT_BIN)
+  FIND_PROGRAM(CPPLINT_BIN NAMES cpplint cpplint.py)
+ENDIF ()
+IF ("${CPPLINT_BIN}" STREQUAL "CPPLINT_BIN-NOTFOUND")
+    MESSAGE(WARNING "Couldn't find cpplint.")
+ELSE ()
+    MESSAGE(STATUS "Found cpplint at ${CPPLINT_BIN}")
+ENDIF ()
+
 ######################################################################################################################
 # Include
 ######################################################################################################################
@@ -68,3 +88,44 @@ TARGET_LINK_LIBRARIES(
 
 INCLUDE(GoogleTest)
 GTEST_DISCOVER_TESTS(default_engine_test)
+
+######################################################################################################################
+# Formater + Linter
+######################################################################################################################
+
+SET(SUPPORT_DIR ${PROJECT_SOURCE_DIR}/support)
+SET(FORMAT_STYLE google)
+
+STRING(CONCAT FORMAT_DIRS
+        "${CMAKE_CURRENT_SOURCE_DIR}/src,"
+        "${CMAKE_CURRENT_SOURCE_DIR}/include,"
+        "${CMAKE_CURRENT_SOURCE_DIR}/test,"
+        )
+
+# "make format"
+ADD_CUSTOM_TARGET(format ${SUPPORT_DIR}/run_clang_format.py
+        ${CLANG_FORMAT_BIN}
+        ${SUPPORT_DIR}/clang_format_exclusions.txt
+        --source_dirs
+        ${FORMAT_DIRS}
+        --fix
+        --quiet
+)
+
+# "make cpplint"
+FILE(GLOB_RECURSE LINT_FILES
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/*.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/*.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/test/*.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/test/*.cpp"
+        )
+
+ADD_CUSTOM_TARGET(cpplint
+        echo '${LINT_FILES}' | xargs -n12 -P8
+        ${CPPLINT_BIN}
+        --verbose=2 --quiet
+        --linelength=120
+        --filter=-legal/copyright,-build/include_subdir
+        )

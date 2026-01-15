@@ -50,7 +50,7 @@ TEST(DefaultEngineTests, BasicFillTest) {
   EXPECT_EQ(id6, 6);
   ASSERT_EQ(exec6.size(), 4);
   EXPECT_EQ(exec6[0], execution_t({5, 995000, 150, side_t::ask, instr, a2}));
-  EXPECT_EQ(exec6[1], execution_t({6, 9950000, 150, side_t::bid, instr, b1}));
+  EXPECT_EQ(exec6[1], execution_t({6, 995000, 150, side_t::bid, instr, b1}));
   EXPECT_EQ(exec6[2], execution_t({2, 1000000, 50, side_t::ask, instr, a1}));
   EXPECT_EQ(exec6[3], execution_t({6, 1000000, 50, side_t::bid, instr, b1}));
 
@@ -59,16 +59,16 @@ TEST(DefaultEngineTests, BasicFillTest) {
   const auto &[id7, exec7] = engine.limit({0, 1005000, 150, side_t::bid, instr, b2});
   EXPECT_EQ(id7, 7);
   ASSERT_EQ(exec7.size(), 2);
-  EXPECT_EQ(exec7[0], execution_t({2, 1000000, 100, side_t::ask, instr, a2}));
-  EXPECT_EQ(exec7[1], execution_t({7, 1000000, 100, side_t::bid, instr, b2}));
+  EXPECT_EQ(exec7[0], execution_t({2, 1000000, 50, side_t::ask, instr, a1}));
+  EXPECT_EQ(exec7[1], execution_t({7, 1000000, 50, side_t::bid, instr, b2}));
 
-  // $100.5 @ 50 / empty @ 0
+  // $100.5 @ 100 / empty @ 0
   // check the bid side has the remaining quantity on TOB after last execution
-  const auto &[id8, exec8] = engine.limit({0, 990000, 50, side_t::ask, instr, a1});
+  const auto &[id8, exec8] = engine.limit({0, 990000, 150, side_t::ask, instr, a1});
   EXPECT_EQ(id8, 8);
   ASSERT_EQ(exec8.size(), 2);
-  EXPECT_EQ(exec8[0], execution_t({7, 1005000, 50, side_t::bid, instr, b2}));
-  EXPECT_EQ(exec8[1], execution_t({8, 1005000, 50, side_t::ask, instr, a1}));
+  EXPECT_EQ(exec8[0], execution_t({7, 1005000, 100, side_t::bid, instr, b2}));
+  EXPECT_EQ(exec8[1], execution_t({8, 1005000, 100, side_t::ask, instr, a1}));
 }
 
 TEST(DefaultEngineTests, BasicCancelTest) {

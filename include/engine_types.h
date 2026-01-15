@@ -34,6 +34,9 @@ struct order {
   trader_t trader;
 
   bool operator==(const order &) const = default;
+  bool operator<(const order &rhs) const {
+    return static_cast<int>(side) * px > static_cast<int>(rhs.side) * rhs.px || (px == rhs.px && id < rhs.id);
+  }
 };
 static_assert(sizeof(order) <= CACHE_LINE_SIZE);
 static_assert(std::is_standard_layout_v<order>);

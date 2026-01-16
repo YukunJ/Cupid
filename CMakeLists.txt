@@ -39,6 +39,9 @@ FetchContent_MakeAvailable(googletest)
 SET(THREADS_PREFER_PTHREAD_FLAG ON)
 FIND_PACKAGE(Threads REQUIRED)
 
+# Find the Google benchmark package
+FIND_PACKAGE(benchmark REQUIRED)
+
 # Find clang-format
 IF (NOT DEFINED CLANG_FORMAT_BIN)
   FIND_PROGRAM(CLANG_FORMAT_BIN NAMES clang-format clang-format-14)
@@ -75,7 +78,7 @@ ADD_LIBRARY(default_engine ${SRC_DIR}/default_engine.cpp)
 TARGET_INCLUDE_DIRECTORIES(default_engine PUBLIC ${INCLUDE_DIR})
 
 ######################################################################################################################
-# Test
+# Test & Benchmark
 ######################################################################################################################
 ENABLE_TESTING()
 
@@ -89,6 +92,8 @@ TARGET_LINK_LIBRARIES(
 INCLUDE(GoogleTest)
 GTEST_DISCOVER_TESTS(default_engine_test)
 
+ADD_EXECUTABLE(mybenchmark ${TEST_DIR}/mybenchmark.cpp)
+TARGET_LINK_LIBRARIES(mybenchmark benchmark::benchmark)
 ######################################################################################################################
 # Formater + Linter
 ######################################################################################################################

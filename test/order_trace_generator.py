@@ -75,7 +75,51 @@ class OrderBook:
         assert side in (-1, 1) # ask or bid
         assert price > 0 and (price % self.tick_size) == 0
         assert qty > 0
-        pass
+        order_id = self.gen_next_order_id()
+        if side == 1: # bid
+            while qty > 0 and self.best_ask and self.best_ask <= price:
+                pl = self.ask_pricelevels[self.best_ask]
+                while pl and qty:
+                    oid, oqty = pl.popleft()
+                    executed_qty = min(oqty, qty)
+                    oqty -= executed_qty
+                    qty -= executed_qty
+
+                    if oqty > 0:
+                        # resting order partial fill
+                        pl.appendleft((oid, oqty))
+                        self.all_orders[oid] = (-1, self.best_ask, oqty)
+                    else:
+                        del self.all_orders[oid]
+                if not pl:
+                    del self.ask_pricelevels[self.best_ask]
+                    self._update_bbo()
+        else:
+            while qty > 0 and self.best_bid and self.best_bid >= price:
+                pl = self.bid_pricelevels[self.best_bid]
+                while pl and qty:
+                    oid, oqty = pl.popleft()
+                    executed_qty = min(oqty, qty)
+                    oqty -= executed_qty
+                    qty -= executed_qty
+
+                    if oqty > 0:
+                        # resting order partial fill
+                        pl.appendleft((oid, oqty))
+                        self.all_orders[oid] = (1, self.best_bid, oqty)
+                    else:
+                        del self.all_orders[oid]
+                if not pl:
+                    del self.bid_pricelevels[self.best_bid]
+                    self._update_bbo()
+        if qty > 0:
+            if side == -1:
+                self.ask_pricelevels[price].append((order_id, qty))
+            else:
+                self.bid_pricelevels[price].append((order_id, qty))
+            self.all_orders[order_id] = (side, price, qty)
+            self._update_bbo()
+        return order_id
 
     def cancel_order(self, order_id: int) -> bool:
         """Cancel an order if it exists"""

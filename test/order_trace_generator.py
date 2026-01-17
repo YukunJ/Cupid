@@ -32,6 +32,8 @@ class Order:
     instr: str = ""
     trader: str = ""
 
+dummy_order = Order(0, 0, 0, 0, "", "")
+
 @dataclass
 class BenchmarkAction:
     type: ActionType
@@ -39,7 +41,7 @@ class BenchmarkAction:
     cancel_id: int = 0
 
 class OrderBook:
-    """Simulates order book for just 1 instrument"""
+    """order book for just 1 instrument"""
     
     def __init__(self):
         # Current best bid/ask price
@@ -151,3 +153,144 @@ class OrderBook:
             return self.best_ask - self.best_bid
         else:
             return None
+
+    def active_order_ids(self) -> List[int]:
+        return list(self.all_orders.keys())
+
+class OrderTraceGenerator:
+    """simulate a series of traces of realistic market order activity"""
+    def __init__(self):
+        self.ob: OrderBook = OrderBook()
+        self.ticker: str = "AAPL"
+        self.traders: List[str] = ["TR1", "TR2", "TR3", "TR4", "TR5"]
+        self.traces: List[BenchmarkAction] = list()
+
+        # custom params
+        self.reference_px = 1000000 # $100.0
+        self.top_book_ratio = 0.7 # 70% activity happen on BBO
+        self.max_pricelevel = 1000 # usually there is at most 1000 price levels per side
+        self.cancel_prob = 0.3
+    
+    def _should_cross_spread(self) -> bool:
+        """determine if next order should cross the spread to execute"""
+        if not self.ob.spread():
+            return False
+        spread_in_ticks = self.ob.spread() / self.ob.tick_size
+        # base probability: 20% at 1 tick, increasing to at most 50% at 20 ticks
+        cross_prob = min(0.2 + (spread_in_ticks - 1) * 0.015, 0.5)
+        return random.random() < cross_prob
+
+    def _generate_depth(self):
+        # 80% on Top of book, the rest 20% distribute across 1-1000. 
+        # the closer to top of book, the more likely
+        weights = [0.8]  # weight for 0 TOB
+    
+        relative_weights = []
+        for i in range(1, self.max_pricelevel+1):
+            relative_weights.append(1 / (i + 1))  # 1/x decay
+        
+        sum_relative = sum(relative_weights)
+        for w in relative_weights:
+            weights.append(w * 0.2 / sum_relative)
+        
+        return random.choices(range(0, self.max_pricelevel+1), weights=weights)[0]
+
+    def _generate_price(self, side: int, depth: int) -> int:
+        if side == 1: # bid
+            if not self.ob.best_bid:
+                return self.reference_px - self.ob.tick_size
+            else:
+                return self.ob.best_bid - depth * self.ob.tick_size
+        else:
+            if not self.ob.best_ask:
+                return self.reference_px + self.ob.tick_size
+            else:
+                return self.ob.best_ask + depth * self.ob.tick_size
+
+    def _generate_quantity(self, depth) -> int:
+        # the closer to tob, the more likely it will be of 1 round lot
+        # the deeper in the book, the bigger the size
+        return 100 + min(1000, depth * 50)
+
+    def generate_random_limit_order(self):
+        all_sides = [side for side, _, _ in self.ob.all_orders.values()]
+        imbalance = sum(all_sides)
+        bid_ratio = max(0.3, min(0.7, 0.5 + imbalance / 100))
+        
+        side = 1 if random.random() < bid_ratio else -1
+        depth = self._generate_depth()
+        price = max(self.ob.tick_size, self._generate_price(side, depth))
+        quantity = self._generate_quantity(depth)
+        should_cross = self._should_cross_spread()
+        if should_cross:
+            # change the price to cross the spread last minute
+            if side == 1:
+                price = self.ob.best_ask or self.reference_px + self.ob.tick_size
+            else:
+                price = self.ob.best_bid or self.reference_px - self.ob.tick_size
+        trader = random.choice(self.traders)
+        self.generate_limit_order_trace(side, price, quantity, self.ticker, trader)
+
+    def generate_N_trace(self, N: int):
+        self.traces.clear()
+        self.seed_initial_book(num_levels=10)
+        while len(self.traces) < N:
+            if random.random() < self.cancel_prob and self.ob.active_order_ids():
+                # cancel
+                self.generate_random_cancel()
+            else:
+                self.generate_random_limit_order()
+
+    def generate_random_cancel(self):
+        active_order_ids = self.ob.active_order_ids()
+        assert active_order_ids
+        active_order_ids_weight = [1/(oid +0.001) for oid in active_order_ids]
+        to_cancel_id = random.choices(active_order_ids, weights=active_order_ids_weight, k=1)[0]
+        self.generate_cancel_trace(to_cancel_id)
+
+    def generate_limit_order_trace(self, side, price, quantity, ticker, trader) -> int:
+        self.traces.append(BenchmarkAction(ActionType.LIMIT, Order(0, price, quantity, side, ticker, trader), 0))
+        return self.ob.add_limit_order(side, price, quantity)
+
+    def generate_cancel_trace(self, order_id) -> bool:
+        self.traces.append(BenchmarkAction(ActionType.CANCEL, dummy_order, order_id))
+        return self.ob.cancel_order(order_id)
+
+    def seed_initial_book(self, num_levels=10):
+        """Seed both sides with initial liquidity"""
+        for i in range(num_levels):
+            bid_price = self.reference_px - (i + 1) * self.ob.tick_size
+            self.generate_limit_order_trace(1, bid_price, 200 + i*100, self.ticker, "MM1")
+            
+            ask_price = self.reference_px + (i + 1) * self.ob.tick_size
+            self.generate_limit_order_trace(-1, ask_price, 200 + i*100, self.ticker, "MM1")
+
+if __name__ == "__main__":
+    generator = OrderTraceGenerator()
+    
+    # Test 1: Generate small number of traces
+    print("Generating 100 traces...")
+    try:
+        generator.generate_N_trace(100)
+        print(f"Success! Generated {len(generator.traces)} traces")
+        
+        # Count action types
+        limit_count = sum(1 for a in generator.traces if a.type == ActionType.LIMIT)
+        cancel_count = sum(1 for a in generator.traces if a.type == ActionType.CANCEL)
+        print(f"Limit orders: {limit_count}, Cancels: {cancel_count}")
+        
+        # Show some sample traces
+        print("\nFirst 5 traces:")
+        for i, trace in enumerate(generator.traces[:5]):
+            if trace.type == ActionType.LIMIT:
+                print(f"  {i}: LIMIT - Side: {trace.order.side}, Price: ${trace.order.px/10000:.2f}, Qty: {trace.order.qty}")
+            else:
+                print(f"  {i}: CANCEL - Order ID: {trace.cancel_id}")
+                
+        # Check book state
+        print(f"\nFinal book state: {generator.ob}")
+        
+    except Exception as e:
+        print(f"Error: {e}")
+        import traceback
+        traceback.print_exc()

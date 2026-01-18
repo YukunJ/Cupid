@@ -8,16 +8,14 @@ Based on the assumption that for a single instrument:
 """
 
 import random
-import json
 import struct
-import statistics
 from enum import IntEnum
 from typing import List, Dict, Tuple, Optional, Deque
-import numpy as np
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 import argparse
-import csv
+from pathlib import Path
 from collections import defaultdict, deque
+from tqdm import tqdm
 
 class ActionType(IntEnum):
     LIMIT = 0
@@ -234,12 +232,13 @@ class OrderTraceGenerator:
     def generate_N_trace(self, N: int):
         self.traces.clear()
         self.seed_initial_book(num_levels=10)
-        while len(self.traces) < N:
+        for _ in tqdm(range(N)):
             if random.random() < self.cancel_prob and self.ob.active_order_ids():
                 # cancel
                 self.generate_random_cancel()
             else:
                 self.generate_random_limit_order()
+                
 
     def generate_random_cancel(self):
         active_order_ids = self.ob.active_order_ids()
@@ -265,32 +264,38 @@ class OrderTraceGenerator:
             ask_price = self.reference_px + (i + 1) * self.ob.tick_size
             self.generate_limit_order_trace(-1, ask_price, 200 + i*100, self.ticker, "MM1")
 
+    def serialize_to_file(self, filename: Path | str):
+        with open(filename, 'wb') as f:
+            for trace in self.traces:
+                if trace.type == ActionType.LIMIT:
+                    instr = trace.order.instr.encode('ascii')[:4].ljust(4, b'\0')
+                    trader = trace.order.trader.encode('ascii')[:4].ljust(4, b'\0')   
+                    packed = struct.pack('<b Q Q L b 4s 4s Q',
+                                        ActionType.LIMIT,     # action_type
+                                        0,                    # order.id
+                                        trace.order.px,       # order.px
+                                        trace.order.qty,      # order.qty
+                                        trace.order.side,     # order.side
+                                        instr,                # order.instr
+                                        trader,               # order.trader
+                                        0)                    # cancel_id                          
+                else:
+                    packed = struct.pack('<b Q Q L b 4s 4s Q',
+                                        ActionType.CANCEL,    # action_type
+                                        0,                    # order.id
+                                        0,                    # order.px
+                                        0,                    # order.qty
+                                        0,                    # order.side
+                                        b'NONE',              # order.instr
+                                        b'NONE',              # order.trader
+                                        trace.cancel_id)      # cancel_id
+                f.write(packed)
+                    
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Generate a realistic market order trace for performance benchmark purpose')
+    parser.add_argument('-c', '--count', type=int, default=10000, help="How many traces to generate")
+    parser.add_argument('-o', '--output', type=str, default="trace.bin", help="The output path for the binary file")
+    args = parser.parse_args()
     generator = OrderTraceGenerator()
-    
-    # Test 1: Generate small number of traces
-    print("Generating 100 traces...")
-    try:
-        generator.generate_N_trace(100)
-        print(f"Success! Generated {len(generator.traces)} traces")
-        
-        # Count action types
-        limit_count = sum(1 for a in generator.traces if a.type == ActionType.LIMIT)
-        cancel_count = sum(1 for a in generator.traces if a.type == ActionType.CANCEL)
-        print(f"Limit orders: {limit_count}, Cancels: {cancel_count}")
-        
-        # Show some sample traces
-        print("\nFirst 5 traces:")
-        for i, trace in enumerate(generator.traces[:5]):
-            if trace.type == ActionType.LIMIT:
-                print(f"  {i}: LIMIT - Side: {trace.order.side}, Price: ${trace.order.px/10000:.2f}, Qty: {trace.order.qty}")
-            else:
-                print(f"  {i}: CANCEL - Order ID: {trace.cancel_id}")
-                
-        # Check book state
-        print(f"\nFinal book state: {generator.ob}")
-        
-    except Exception as e:
-        print(f"Error: {e}")
-        import traceback
-        traceback.print_exc()
+    generator.generate_N_trace(args.count)
+    generator.serialize_to_file(args.output)

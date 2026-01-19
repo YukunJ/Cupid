@@ -93,7 +93,8 @@ INCLUDE(GoogleTest)
 GTEST_DISCOVER_TESTS(default_engine_test)
 
 ADD_EXECUTABLE(mybenchmark ${TEST_DIR}/mybenchmark.cpp)
-TARGET_LINK_LIBRARIES(mybenchmark benchmark::benchmark)
+TARGET_INCLUDE_DIRECTORIES(mybenchmark PUBLIC ${INCLUDE_DIR})
+TARGET_LINK_LIBRARIES(mybenchmark default_engine benchmark::benchmark)
 ######################################################################################################################
 # Formater + Linter
 ######################################################################################################################

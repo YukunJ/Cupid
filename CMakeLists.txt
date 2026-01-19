@@ -82,6 +82,7 @@ TARGET_INCLUDE_DIRECTORIES(default_engine PUBLIC ${INCLUDE_DIR})
 ######################################################################################################################
 ENABLE_TESTING()
 
+GET_FILENAME_COMPONENT(PROJECT_ROOT "${CMAKE_CURRENT_SOURCE_DIR}" ABSOLUTE)
 ADD_EXECUTABLE(default_engine_test ${TEST_DIR}/default_engine_test.cpp)
 TARGET_LINK_LIBRARIES(
   default_engine_test
@@ -92,9 +93,10 @@ TARGET_LINK_LIBRARIES(
 INCLUDE(GoogleTest)
 GTEST_DISCOVER_TESTS(default_engine_test)
 
-ADD_EXECUTABLE(mybenchmark ${TEST_DIR}/mybenchmark.cpp)
-TARGET_INCLUDE_DIRECTORIES(mybenchmark PUBLIC ${INCLUDE_DIR})
-TARGET_LINK_LIBRARIES(mybenchmark default_engine benchmark::benchmark)
+ADD_EXECUTABLE(engine_benchmark ${TEST_DIR}/engine_benchmark.cpp)
+TARGET_INCLUDE_DIRECTORIES(engine_benchmark PRIVATE ${INCLUDE_DIR})
+TARGET_COMPILE_DEFINITIONS(engine_benchmark PRIVATE PROJECT_ROOT_PATH="${PROJECT_ROOT}")
+TARGET_LINK_LIBRARIES(engine_benchmark default_engine benchmark::benchmark)
 ######################################################################################################################
 # Formater + Linter
 ######################################################################################################################

@@ -55,11 +55,16 @@ static std::vector<benchmark_trace> load_trace(const std::string &trace_path) {
 
 // global default namespace
 
-const std::filesystem::path trace_path = std::filesystem::path(PROJECT_ROOT_PATH) / "1_million_trace.bin";
+const std::vector<std::filesystem::path> trace_paths = {
+    std::filesystem::path(PROJECT_ROOT_PATH) / "100k_default.bin",
+    std::filesystem::path(PROJECT_ROOT_PATH) / "100k_major_cancel.bin",
+    std::filesystem::path(PROJECT_ROOT_PATH) / "100k_major_depth.bin",
+    std::filesystem::path(PROJECT_ROOT_PATH) / "500k_default.bin",
+};
 
 template <typename EngineType>
 static void BM_Engine(benchmark::State &state) {  // NOLINT(runtime/references)
-  auto traces = cupid::load_trace(trace_path.string());
+  auto traces = cupid::load_trace(trace_paths[state.range(0)].string());
   state.counters["traces"] = traces.size();
   state.counters["limit_order"] = std::accumulate(
       traces.begin(), traces.end(), 0ULL,
@@ -87,9 +92,31 @@ static void BM_Engine(benchmark::State &state) {  // NOLINT(runtime/references)
 }
 
 BENCHMARK_TEMPLATE(BM_Engine, cupid::default_engine)
-    ->Name("DefaultEngine")
+    ->Name("DefaultEngine/100k_default")
+    ->Args({0})
     ->Unit(benchmark::kMillisecond)
     ->Iterations(3)
+    ->MeasureProcessCPUTime();
+
+BENCHMARK_TEMPLATE(BM_Engine, cupid::default_engine)
+    ->Name("DefaultEngine/100k_major_cancel")
+    ->Args({1})
+    ->Unit(benchmark::kMillisecond)
+    ->Iterations(3)
+    ->MeasureProcessCPUTime();
+
+BENCHMARK_TEMPLATE(BM_Engine, cupid::default_engine)
+    ->Name("DefaultEngine/100k_major_depth")
+    ->Args({2})
+    ->Unit(benchmark::kMillisecond)
+    ->Iterations(3)
+    ->MeasureProcessCPUTime();
+
+BENCHMARK_TEMPLATE(BM_Engine, cupid::default_engine)
+    ->Name("DefaultEngine/500K_default")
+    ->Args({3})
+    ->Unit(benchmark::kMillisecond)
+    ->Iterations(1)
     ->MeasureProcessCPUTime();
 
 BENCHMARK_MAIN();

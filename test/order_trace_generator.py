@@ -157,7 +157,7 @@ class OrderBook:
 
 class OrderTraceGenerator:
     """simulate a series of traces of realistic market order activity"""
-    def __init__(self):
+    def __init__(self, depth_prob: float, cancel_prob:float):
         self.ob: OrderBook = OrderBook()
         self.ticker: str = "AAPL"
         self.traders: List[str] = ["TR1", "TR2", "TR3", "TR4", "TR5"]
@@ -165,9 +165,9 @@ class OrderTraceGenerator:
 
         # custom params
         self.reference_px = 1000000 # $100.0
-        self.top_book_ratio = 0.7 # 70% activity happen on BBO
+        self.top_book_prob = 1 - depth_prob
         self.max_pricelevel = 1000 # usually there is at most 1000 price levels per side
-        self.cancel_prob = 0.3
+        self.cancel_prob = cancel_prob
     
     def _should_cross_spread(self) -> bool:
         """determine if next order should cross the spread to execute"""
@@ -179,9 +179,9 @@ class OrderTraceGenerator:
         return random.random() < cross_prob
 
     def _generate_depth(self):
-        # 80% on Top of book, the rest 20% distribute across 1-1000. 
+        # 'self.top_book_prob' on Top of book, the rest distribute across 1-1000. 
         # the closer to top of book, the more likely
-        weights = [0.8]  # weight for 0 TOB
+        weights = [self.top_book_prob]  # weight for 0 TOB
     
         relative_weights = []
         for i in range(1, self.max_pricelevel+1):
@@ -189,7 +189,7 @@ class OrderTraceGenerator:
         
         sum_relative = sum(relative_weights)
         for w in relative_weights:
-            weights.append(w * 0.2 / sum_relative)
+            weights.append(w * (1.0 -self.top_book_prob) / sum_relative)
         
         return random.choices(range(0, self.max_pricelevel+1), weights=weights)[0]
 
@@ -295,7 +295,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Generate a realistic market order trace for performance benchmark purpose')
     parser.add_argument('-c', '--count', type=int, default=10000, help="How many traces to generate")
     parser.add_argument('-o', '--output', type=str, default="trace.bin", help="The output path for the binary file")
+    parser.add_argument('--depth-prob', type=float, default=0.8, help="The probability of activity happening not on top of book. default is 80 percent on tob of book")
+    parser.add_argument('--cancel-prob', type=float, default=0.2, help="The probability that cancel happens")
     args = parser.parse_args()
-    generator = OrderTraceGenerator()
+    generator = OrderTraceGenerator(depth_prob=args.depth_prob, cancel_prob=args.cancel_prob)
     generator.generate_N_trace(args.count)
     generator.serialize_to_file(args.output)

@@ -19,8 +19,6 @@ class default_engine : public engine_interface<default_engine> {
 
  private:
   orderid_t next_orderid;
-  std::set<order_t> bid_side;
-  std::set<order_t> ask_side;
 };
 
 }  // namespace cupid

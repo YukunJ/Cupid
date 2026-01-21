@@ -77,6 +77,8 @@ SET(TEST_DIR ${PROJECT_SOURCE_DIR}/test)
 ADD_LIBRARY(default_engine ${SRC_DIR}/default_engine.cpp)
 TARGET_INCLUDE_DIRECTORIES(default_engine PUBLIC ${INCLUDE_DIR})
 
+ADD_LIBRARY(benchmark_engine ${SRC_DIR}/benchmark_engine.cpp)
+TARGET_INCLUDE_DIRECTORIES(benchmark_engine PUBLIC ${INCLUDE_DIR})
 ######################################################################################################################
 # Test & Benchmark
 ######################################################################################################################
@@ -96,7 +98,7 @@ GTEST_DISCOVER_TESTS(default_engine_test)
 ADD_EXECUTABLE(engine_benchmark ${TEST_DIR}/engine_benchmark.cpp)
 TARGET_INCLUDE_DIRECTORIES(engine_benchmark PRIVATE ${INCLUDE_DIR})
 TARGET_COMPILE_DEFINITIONS(engine_benchmark PRIVATE PROJECT_ROOT_PATH="${PROJECT_ROOT}")
-TARGET_LINK_LIBRARIES(engine_benchmark default_engine benchmark::benchmark)
+TARGET_LINK_LIBRARIES(engine_benchmark default_engine benchmark_engine benchmark::benchmark)
 ######################################################################################################################
 # Formater + Linter
 ######################################################################################################################

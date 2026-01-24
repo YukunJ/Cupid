@@ -92,6 +92,7 @@ static void BM_Engine(benchmark::State &state) {  // NOLINT(runtime/references)
   }
 }
 
+// Benchmark Engine
 BENCHMARK_TEMPLATE(BM_Engine, cupid::benchmark_engine)
     ->Name("BenchmarkEngine/100k_default")
     ->Args({0})
@@ -115,6 +116,35 @@ BENCHMARK_TEMPLATE(BM_Engine, cupid::benchmark_engine)
 
 BENCHMARK_TEMPLATE(BM_Engine, cupid::benchmark_engine)
     ->Name("BenchmarkEngine/500K_default")
+    ->Args({3})
+    ->Unit(benchmark::kMillisecond)
+    ->Iterations(1)
+    ->MeasureProcessCPUTime();
+
+// Default Engine
+BENCHMARK_TEMPLATE(BM_Engine, cupid::default_engine)
+    ->Name("DefaultEngine/100k_default")
+    ->Args({0})
+    ->Unit(benchmark::kMillisecond)
+    ->Iterations(3)
+    ->MeasureProcessCPUTime();
+
+BENCHMARK_TEMPLATE(BM_Engine, cupid::default_engine)
+    ->Name("DefaultEngine/100k_major_cancel")
+    ->Args({1})
+    ->Unit(benchmark::kMillisecond)
+    ->Iterations(3)
+    ->MeasureProcessCPUTime();
+
+BENCHMARK_TEMPLATE(BM_Engine, cupid::default_engine)
+    ->Name("DefaultEngine/100k_major_depth")
+    ->Args({2})
+    ->Unit(benchmark::kMillisecond)
+    ->Iterations(3)
+    ->MeasureProcessCPUTime();
+
+BENCHMARK_TEMPLATE(BM_Engine, cupid::default_engine)
+    ->Name("DefaultEngine/500K_default")
     ->Args({3})
     ->Unit(benchmark::kMillisecond)
     ->Iterations(1)

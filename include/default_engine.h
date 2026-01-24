@@ -4,6 +4,7 @@
 #include <set>
 #include <utility>
 #include <vector>
+#include <unordered_set>
 #include "engine_interface.h"
 #include "engine_types.h"
 
@@ -19,6 +20,9 @@ class default_engine : public engine_interface<default_engine> {
 
  private:
   orderid_t next_orderid;
+  // ordered from top of book to depth of book based on price-time priority
+  std::vector<order_t> bid_side;
+  std::vector<order_t> ask_side;
 };
 
 }  // namespace cupid

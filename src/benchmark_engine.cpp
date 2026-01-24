@@ -1,3 +1,4 @@
+#include <cassert>
 #include <utility>
 #include <vector>
 #include "benchmark_engine.h"
@@ -13,6 +14,7 @@ std::pair<orderid_t, std::vector<execution_t>> benchmark_engine::limit(order_t o
   orderid_t curr_id = next_orderid++;
   order.id = curr_id;
   price_t px = order.px;
+  assert(order.qty > 0);
   if (order.side == side_t::bid) {
     for (auto ask_it = ask_side.begin(); ask_it != ask_side.end();) {
       if (ask_it->px > px) {
